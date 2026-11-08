@@ -8,12 +8,15 @@
  *
  *   node scripts/mock-wled.mjs            # http://localhost:8080
  *   PORT=9000 LEDS=64 MATRIX=8x8 node scripts/mock-wled.mjs
+ *   DEV_SERVER_HOST=0.0.0.0 node scripts/mock-wled.mjs   # reachable from other devices
  */
 import http from 'node:http'
 import { existsSync, readFileSync } from 'node:fs'
 import { WebSocketServer } from 'ws'
 
 const PORT = Number(process.env.PORT ?? 8080)
+// Same rule as the Vite servers: localhost only unless DEV_SERVER_HOST says otherwise (see .env).
+const HOST = process.env.DEV_SERVER_HOST?.trim() || '127.0.0.1'
 const LEDS = Number(process.env.LEDS ?? 60)
 const [MW, MH] = (process.env.MATRIX ?? '').split('x').map(Number)
 const LATENCY = Number(process.env.LATENCY ?? 25)
@@ -269,7 +272,8 @@ setInterval(() => {
   liveClient.send(buf)
 }, 40)
 
-server.listen(PORT, () => {
-  console.log(`Mock WLED-SR 0.13.4 on http://localhost:${PORT}  (ws://localhost:${PORT}/ws, ${LEDS} LEDs${MW ? `, ${MW}x${MH} matrix` : ''})`)
+server.listen(PORT, HOST, () => {
+  if (!['127.0.0.1', 'localhost', '::1'].includes(HOST)) console.warn(`⚠ DEV_SERVER_HOST=${HOST}: the mock is reachable from the network.`)
+  console.log(`Mock WLED-SR 0.13.4 on http://${HOST}:${PORT}  (ws://${HOST}:${PORT}/ws, ${LEDS} LEDs${MW ? `, ${MW}x${MH} matrix` : ''})`)
   console.log(`Open the UI with  http://localhost:5173/?host=localhost:${PORT}`)
 })

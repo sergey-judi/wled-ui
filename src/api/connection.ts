@@ -238,6 +238,7 @@ export class WledConnection {
   // ---------- live view ----------
 
   setLive(on: boolean) {
+    if (this.live === on) return // nothing changes; (re)sent on socket open anyway
     this.live = on
     if (this.wsOpen()) this.ws!.send(JSON.stringify({ lv: on }))
   }

@@ -25,12 +25,16 @@ interface DeviceStore {
   presets: PresetsFile | null
   presetsError?: string
   liveFrame: LiveFrame | null
+  /** User switched live view on (kept across tabs; streaming runs only while a live view is on screen). */
+  liveWanted: boolean
 
   connect(host?: string): void
   send(patch: StatePatch): void
   loadPresets(): Promise<void>
   loadPaletteData(): Promise<void>
+  /** Start/stop the lamp's LED stream (called by the LivePreview component). */
   setLive(on: boolean): void
+  setLiveWanted(on: boolean): void
 }
 
 let conn: WledConnection | null = null
@@ -50,6 +54,7 @@ export const useDevice = create<DeviceStore>()((set, get) => ({
   paletteData: {},
   presets: null,
   liveFrame: null,
+  liveWanted: false,
 
   connect(host) {
     if (host !== undefined) saveHost(host)
@@ -57,7 +62,7 @@ export const useDevice = create<DeviceStore>()((set, get) => ({
     conn?.stop()
     presetsPmt = -1
     paletteLoad = null
-    set({ host: target, status: 'connecting', error: undefined, state: null, info: null, presets: null, paletteData: {} })
+    set({ host: target, status: 'connecting', error: undefined, state: null, info: null, presets: null, paletteData: {}, liveFrame: null })
     if (!target) {
       // Hosted (HTTPS) build on first visit: wait for the user to enter the lamp's address.
       conn = null
@@ -150,6 +155,10 @@ export const useDevice = create<DeviceStore>()((set, get) => ({
 
   setLive(on) {
     conn?.setLive(on)
-    if (!on) set({ liveFrame: null })
+  },
+
+  setLiveWanted(on) {
+    // Keep the last frame while moving between tabs (no blank flash); drop it when switched off.
+    set(on ? { liveWanted: true } : { liveWanted: false, liveFrame: null })
   },
 }))

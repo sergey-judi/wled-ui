@@ -3,7 +3,7 @@ import { useDevice } from '../../store/device'
 import { send, useCurrentEffect, useFocusSegment } from '../../store/hooks'
 import { Card, Chip, Slider, Toggle, cx } from '../../components/ui'
 import { kelvinToRgb, rgbCss } from '../../lib/color'
-import { LivePreview } from './LivePreview'
+import { LivePreview } from '../../components/LivePreview'
 
 const QUICK: { name: string; value: [number, number, number] | number }[] = [
   { name: 'Warm white', value: 2700 },
@@ -30,7 +30,6 @@ export function Dashboard() {
   const state = useDevice((s) => s.state)!
   const palettes = useDevice((s) => s.palettes)
   const presets = useDevice((s) => s.presets)
-  const wsAvailable = useDevice((s) => (s.info?.ws ?? -1) > -1)
   const seg = useFocusSegment()
   const effect = useCurrentEffect()
   const primary = seg?.col[0]
@@ -121,7 +120,7 @@ export function Dashboard() {
         </div>
       </Card>
 
-      {wsAvailable && <LivePreview />}
+      <LivePreview />
     </div>
   )
 }

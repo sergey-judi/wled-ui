@@ -19,8 +19,8 @@ npm run dev          # http://localhost:5173  → talks to http://4.3.2.1
 
 1. Join the lamp's Wi-Fi (`[LF.UA] sound`). Your computer gets a 4.3.2.x address.
 2. Open http://localhost:5173.
-3. To test from your phone on the same lamp Wi-Fi: Vite prints a `Network:` URL (e.g. `http://4.3.2.5:5173`).
-   Open it on the phone. It still targets the lamp at 4.3.2.1 by default.
+3. Local servers are reachable **only from this computer** by default. To test from your phone, expose them
+   explicitly (see [Network exposure](#network-exposure-of-local-servers)) and open the `Network:` URL Vite prints.
 
 ### Lamp Wi-Fi vs home Wi-Fi
 
@@ -41,7 +41,7 @@ These files only set the *default*. An address someone entered in **Settings** (
 |---|---|---|
 | **On the lamp** | Every browser, including iPhone; lamp Wi-Fi or home Wi-Fi | `npm run build:lamp && npm run upload:lamp`, then open `http://<lamp>/ui.htm` |
 | **Vercel** (or any HTTPS static host) | **Chrome / Edge, desktop and Android**, with the lamp on your **home Wi-Fi** | Deploy `dist/`, open the site, enter the lamp's local IP, click **Allow** when the browser asks |
-| Local dev server / laptop | Any browser on the same network | `npm run dev` · `npm run serve` (see below) |
+| Local dev server / laptop | This computer (others only if you expose it) | `npm run dev` · `npm run serve` (see below) |
 
 ### Hosted on Vercel: how it works
 
@@ -71,15 +71,35 @@ npx vercel --prod    # production URL
 Or push the project to GitHub and import it at vercel.com/new. Leave `VITE_WLED_HOST` unset on Vercel: the hosted page
 always asks for the address.
 
+### Network exposure of local servers
+
+`npm run dev`, `dev:home`, `serve`, `serve:home` and `dev:mock` listen on the address in **`DEV_SERVER_HOST`**:
+
+| Value | Who can open it |
+|---|---|
+| `127.0.0.1` (default, set in `.env`) | Only this computer |
+| A specific IP of this computer, e.g. `192.168.1.105` | Devices on that one network (e.g. home Wi-Fi only) |
+| `0.0.0.0` | Devices on every network this computer is connected to |
+
+Set it per run, or persistently for this machine in `.env.local` (git-ignored):
+
+```bash
+DEV_SERVER_HOST=192.168.1.105 npm run serve:home    # share with phones on your home Wi-Fi, for this run only
+echo "DEV_SERVER_HOST=192.168.1.105" > .env.local   # make it this machine's default
+```
+
+Anything other than localhost prints a ⚠ warning at start-up. The setting only affects the local servers: it isn't
+bundled into the app and doesn't matter for Vercel or the copy installed on the lamp. Find this computer's IP with `ipconfig getifaddr en0`.
+
 ### Serving from this laptop to others on the network
 
 ```bash
-npm run serve          # lamp Wi-Fi: http://<laptop-ip>:4173, lamp at 4.3.2.1
-npm run serve:home     # home Wi-Fi: lamp address from .env.home
+DEV_SERVER_HOST=<laptop-ip> npm run serve        # lamp Wi-Fi: lamp at 4.3.2.1
+DEV_SERVER_HOST=<laptop-ip> npm run serve:home   # home Wi-Fi: lamp address from .env.home
 ```
 
-The laptop only serves the page. Each visitor's browser sends commands straight to the lamp, so every visitor must be on
-a network where the lamp is reachable.
+Others open `http://<laptop-ip>:4173`. The laptop only serves the page. Each visitor's browser sends commands straight to
+the lamp, so every visitor must be on a network where the lamp is reachable.
 
 ### Installing on the lamp
 

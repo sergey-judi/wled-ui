@@ -1,17 +1,22 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Activity } from 'lucide-react'
-import { useDevice } from '../../store/device'
-import { Card, Toggle } from '../../components/ui'
+import { useDevice } from '../store/device'
+import { Card, Toggle } from './ui'
 
 /**
  * Real-time LED colours streamed by the lamp over the WebSocket ({"lv":true}).
  * The firmware streams to a single client at a time, so this is opt-in.
+ *
+ * Used on several tabs. The on/off choice lives in the store, so it survives tab switches,
+ * while the stream itself only runs while a LivePreview is mounted.
  */
 export function LivePreview() {
-  const [on, setOn] = useState(false)
+  const on = useDevice((s) => s.liveWanted)
+  const setOn = useDevice((s) => s.setLiveWanted)
   const frame = useDevice((s) => s.liveFrame)
   const setLive = useDevice((s) => s.setLive)
   const transport = useDevice((s) => s.transport)
+  const wsAvailable = useDevice((s) => (s.info?.ws ?? -1) > -1)
   const canvas = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -38,6 +43,9 @@ export function LivePreview() {
     }
     ctx.putImageData(img, 0, 0)
   }, [frame])
+
+  // Firmware built without WebSockets (info.ws = -1) can't stream LED colours.
+  if (!wsAvailable) return null
 
   const matrix = frame && frame.height > 1
   return (

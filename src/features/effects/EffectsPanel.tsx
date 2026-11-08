@@ -5,6 +5,7 @@ import { send, useCurrentEffect, useFocusSegment } from '../../store/hooks'
 import { effectDefaults, type EffectMeta } from '../../api/effects'
 import { paletteGradient } from '../../api/palettes'
 import { Card, Chip, Empty, Slider, cx } from '../../components/ui'
+import { LivePreview } from '../../components/LivePreview'
 
 type Filter = 'all' | 'audio' | '2d'
 
@@ -15,6 +16,7 @@ export function EffectsPanel() {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
       <div className="grid min-w-0 grid-cols-1 content-start gap-4 lg:sticky lg:top-4 lg:self-start">
+        <LivePreview />
         <EffectControls />
         <PalettePicker />
       </div>
