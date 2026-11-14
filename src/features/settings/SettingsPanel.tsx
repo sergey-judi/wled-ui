@@ -3,6 +3,7 @@ import { useDevice } from '../../store/device'
 import { send } from '../../store/hooks'
 import { Card, Row, Slider } from '../../components/ui'
 import { HostForm, HostedNotice } from './HostForm'
+import { NodesCard, SyncCard } from './SyncCards'
 import { httpBase } from '../../api/config'
 
 function uptime(sec: number) {
@@ -46,6 +47,9 @@ export function SettingsPanel() {
             <p className="mt-1 text-xs text-muted">Fade duration between colours and brightness levels. Resets to the lamp's saved default on reboot.</p>
           </Card>
         )}
+
+        {state && <SyncCard />}
+        {info && <NodesCard />}
 
         <Card title="Advanced">
           <p className="mb-3 text-sm text-muted">

@@ -50,3 +50,21 @@ export function isBlack(c: RGBW | undefined) {
 export function luminance(c: readonly number[]) {
   return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255
 }
+
+/** HSV (h 0–360, s/v 0–1) → RGB. */
+export function hsvToRgb(h: number, s: number, v: number): RGB {
+  const f = (n: number) => {
+    const k = (n + h / 60) % 6
+    return clamp(255 * (v - v * s * Math.max(0, Math.min(k, 4 - k, 1))))
+  }
+  return [f(5), f(3), f(1)]
+}
+
+/** A vivid random colour (random hue, high saturation) — plain random RGB tends to look muddy. */
+export const randomVividColor = (): RGB => hsvToRgb(Math.random() * 360, 0.75 + Math.random() * 0.25, 1)
+
+/** Random element, avoiding `not` when there is a choice. */
+export function pickRandom<T>(list: readonly T[], not?: T): T | undefined {
+  const pool = list.length > 1 && not !== undefined ? list.filter((x) => x !== not) : list
+  return pool[Math.floor(Math.random() * pool.length)]
+}

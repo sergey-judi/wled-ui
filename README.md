@@ -5,8 +5,11 @@ the browser and talks straight to the lamp's JSON API and WebSocket. There's no 
 
 Features: power and brightness, a colour picker with RGB/hex input, white and CCT sliders (only when the LEDs support them),
 quick colours, 195 effects with labelled sliders read from the firmware's metadata, palette previews, sound-reactive and 2D
-filters, sound sensitivity, presets (activate/save/delete), segments (select/toggle/brightness/range/reverse/mirror/add/delete),
-nightlight, transition time, live LED preview, device info and connection monitoring.
+filters, sound sensitivity, favourite/recent effects and palettes, random effect/palette/colour, presets (activate, save
+with an icon, rename, overwrite, delete), a playlist editor, presets backup/restore (file or this browser's copy), segments
+(select/toggle/brightness/range/grouping/spacing/offset/name/reverse/mirror/freeze/add/delete), a pixel painter with
+picture import and "save drawing as preset", sync send/receive, a list of other WLED lamps on the network, nightlight,
+transition time, live LED preview, device info and connection monitoring.
 
 Firmware findings, the API reference and the network analysis are in **[docs/wled-0.13.4-analysis.md](docs/wled-0.13.4-analysis.md)**.
 

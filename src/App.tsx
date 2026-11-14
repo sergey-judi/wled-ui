@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from 'react'
-import { Bookmark, House, Layers, Loader2, Palette, Power, Settings2, Sparkles, WifiOff } from 'lucide-react'
+import { Bookmark, Brush, House, Layers, Loader2, Palette, Power, Settings2, Sparkles, WifiOff } from 'lucide-react'
 import { useDevice } from './store/device'
 import { send, useFocusSegment } from './store/hooks'
 import { isBlack } from './lib/color'
@@ -8,6 +8,7 @@ import { Dashboard } from './features/dashboard/Dashboard'
 import { ColorsPanel } from './features/colors/ColorsPanel'
 import { EffectsPanel } from './features/effects/EffectsPanel'
 import { PresetsPanel } from './features/presets/PresetsPanel'
+import { PaintPanel } from './features/paint/PaintPanel'
 import { SegmentsPanel } from './features/segments/SegmentsPanel'
 import { SettingsPanel } from './features/settings/SettingsPanel'
 import { HostForm, HostedNotice } from './features/settings/HostForm'
@@ -16,6 +17,7 @@ const TABS = [
   { id: 'home', label: 'Home', icon: House, Panel: Dashboard },
   { id: 'color', label: 'Color', icon: Palette, Panel: ColorsPanel },
   { id: 'effects', label: 'Effects', icon: Sparkles, Panel: EffectsPanel },
+  { id: 'paint', label: 'Paint', icon: Brush, Panel: PaintPanel },
   { id: 'presets', label: 'Presets', icon: Bookmark, Panel: PresetsPanel },
   { id: 'segments', label: 'Segments', icon: Layers, Panel: SegmentsPanel },
   { id: 'settings', label: 'Settings', icon: Settings2, Panel: SettingsPanel },
@@ -84,17 +86,17 @@ export default function App() {
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/85 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur-lg md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-6">
+        <div className="mx-auto grid max-w-lg grid-cols-7">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
               disabled={!ready && t.id !== 'settings'}
-              className={cx('flex flex-col items-center gap-1 py-2 text-[11px] transition-colors disabled:opacity-40', tab === t.id ? 'text-fg' : 'text-muted')}
+              className={cx('flex min-w-0 flex-col items-center gap-1 py-2 text-[10px] transition-colors disabled:opacity-40', tab === t.id ? 'text-fg' : 'text-muted')}
             >
               <t.icon className={cx('size-5', tab === t.id && 'accent-text')} />
-              {t.label}
+              <span className="max-w-full truncate">{t.label}</span>
             </button>
           ))}
         </div>

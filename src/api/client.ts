@@ -1,5 +1,5 @@
 import { httpBase, isSecurePage } from './config'
-import type { PalettePage, PresetsFile, StatePatch, WledFull, WledInfo, WledState, WledStateInfo } from './types'
+import type { PalettePage, PresetsFile, StatePatch, WledFull, WledInfo, WledNode, WledState, WledStateInfo } from './types'
 
 /**
  * Plain HTTP client for the WLED JSON API (0.13.x).
@@ -90,6 +90,34 @@ export class WledClient {
     } catch (err) {
       if (err instanceof WledHttpError && err.status === 404) return {}
       throw err
+    }
+  }
+
+  /** Other WLED lamps the firmware has heard on the sync port. */
+  async getNodes(): Promise<WledNode[]> {
+    return (await this.request<{ nodes?: WledNode[] }>('/json/nodes')).nodes ?? []
+  }
+
+  /**
+   * Write a file to the lamp's flash (POST /upload, the endpoint behind the stock "Restore presets").
+   * Multipart form data is a "simple" CORS request, so there is no preflight. The firmware answers
+   * HTTP 500 when "OTA lock" is enabled in its security settings.
+   */
+  async uploadFile(path: string, body: Blob, timeout = 15000): Promise<string> {
+    const form = new FormData()
+    form.append('data', body, path)
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), timeout)
+    try {
+      const res = await fetch(this.base + '/upload', { ...LOCAL_NETWORK_INIT, method: 'POST', body: form, signal: ctrl.signal })
+      const text = await res.text()
+      if (!res.ok) throw new WledHttpError(text.trim() || `Upload failed (HTTP ${res.status})`, res.status)
+      return text
+    } catch (err) {
+      if (err instanceof WledHttpError) throw err
+      throw new WledHttpError(ctrl.signal.aborted ? 'Upload timed out' : `Upload failed: ${(err as Error).message}`)
+    } finally {
+      clearTimeout(timer)
     }
   }
 

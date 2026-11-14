@@ -3,7 +3,8 @@ import { WledConnection, type ConnectionStatus, type LiveFrame, type Transport }
 import { getHost, saveHost } from '../api/config'
 import { parseEffects, type EffectMeta } from '../api/effects'
 import { applyPatch } from '../api/patch'
-import type { PaletteStop, PresetsFile, StatePatch, WledInfo, WledState } from '../api/types'
+import type { PaletteStop, PresetsFile, StatePatch, WledInfo, WledNode, WledState } from '../api/types'
+import { readJson, writeJson } from '../lib/storage'
 
 /**
  * Single source of truth for the UI. Components read from here and call the
@@ -35,7 +36,23 @@ interface DeviceStore {
   /** Start/stop the lamp's LED stream (called by the LivePreview component). */
   setLive(on: boolean): void
   setLiveWanted(on: boolean): void
+  /** Other WLED lamps on the network (/json/nodes). */
+  fetchNodes(): Promise<WledNode[]>
+  /** Replace presets.json on the lamp, then reload it. */
+  restorePresets(file: PresetsFile): Promise<void>
 }
+
+export interface PresetsBackup {
+  at: number
+  name: string
+  data: PresetsFile
+}
+
+/** The last non-empty presets.json seen from each lamp, kept in this browser as a safety net. */
+export const presetsBackupKey = (host: string) => `wled-ui.presets-backup:${host}`
+export const readPresetsBackup = (host: string) => readJson<PresetsBackup | null>(presetsBackupKey(host), null)
+
+const hasPresets = (p: PresetsFile) => Object.entries(p).some(([id, v]) => Number(id) > 0 && v && Object.keys(v).length > 0)
 
 let conn: WledConnection | null = null
 let presetsPmt = -1
@@ -109,7 +126,9 @@ export const useDevice = create<DeviceStore>()((set, get) => ({
     presetsPmt = get().info?.fs.pmt ?? -1
     try {
       const presets = await c.exclusive(() => c.client.getPresets())
-      if (c === conn) set({ presets, presetsError: undefined })
+      if (c !== conn) return
+      set({ presets, presetsError: undefined })
+      if (hasPresets(presets)) writeJson(presetsBackupKey(get().host), { at: Date.now(), name: get().info?.name ?? '', data: presets } satisfies PresetsBackup)
     } catch (err) {
       if (c === conn) set({ presetsError: (err as Error).message })
     }
@@ -151,6 +170,20 @@ export const useDevice = create<DeviceStore>()((set, get) => ({
       paletteLoad = null // retry next time the panel is opened
     })
     return paletteLoad
+  },
+
+  async fetchNodes() {
+    const c = conn
+    if (!c) return []
+    return c.exclusive(() => c.client.getNodes())
+  },
+
+  async restorePresets(file) {
+    const c = conn
+    if (!c) throw new Error('Not connected')
+    const body = new Blob([JSON.stringify(file)], { type: 'application/json' })
+    await c.exclusive(() => c.client.uploadFile('/presets.json', body))
+    await get().loadPresets()
   },
 
   setLive(on) {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown, Plus, Trash2 } from 'lucide-react'
 import { useDevice } from '../../store/device'
 import { send } from '../../store/hooks'
@@ -56,6 +56,12 @@ function SegmentCard({ seg, ledCount, canDelete, onFocus }: { seg: Segment; ledC
   const patch = (p: Partial<Segment>) => send({ seg: { id: seg.id, ...p } })
   const field = 'w-full min-w-0 rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm tabular-nums outline-none focus:border-[rgb(var(--accent))]'
   const rangeValid = range.start >= 0 && range.stop > range.start && range.stop <= ledCount
+  const [name, setName] = useState(seg.n ?? '')
+  useEffect(() => setName(seg.n ?? ''), [seg.n])
+  const commitName = () => {
+    const n = name.trim().slice(0, 32)
+    if (n !== (seg.n ?? '')) patch({ n })
+  }
 
   return (
     <li className={cx('rounded-2xl border p-3 transition-colors', seg.sel ? 'border-[rgb(var(--accent)/0.6)] bg-[rgb(var(--accent)/0.08)]' : 'border-line bg-surface-2/50')}>
@@ -71,6 +77,7 @@ function SegmentCard({ seg, ledCount, canDelete, onFocus }: { seg: Segment; ledC
             <span className="block truncate text-xs text-muted">
               LEDs {seg.start}–{seg.stop - 1} · {effects[seg.fx]?.name ?? `FX ${seg.fx}`}
               {seg.sel ? ' · selected' : ''}
+              {seg.frz ? ' · frozen' : ''}
             </span>
           </span>
         </button>
@@ -82,8 +89,20 @@ function SegmentCard({ seg, ledCount, canDelete, onFocus }: { seg: Segment; ledC
 
       {open && (
         <div className="mt-3 grid gap-3 border-t border-line pt-3">
+          <label className="text-xs text-muted">
+            Name
+            <input
+              className={field}
+              value={name}
+              maxLength={32}
+              placeholder={`Segment ${seg.id}`}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={commitName}
+              onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+            />
+          </label>
           <Slider label="Segment brightness" min={1} value={seg.bri} onChange={(bri) => patch({ bri })} format={(v) => `${Math.round((v / 255) * 100)}%`} />
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             <label className="text-xs text-muted">
               Start LED
               <input className={field} type="number" min={0} max={ledCount - 1} value={range.start} onChange={(e) => setRange({ ...range, start: Number(e.target.value) })} />
@@ -99,6 +118,10 @@ function SegmentCard({ seg, ledCount, canDelete, onFocus }: { seg: Segment; ledC
             <label className="text-xs text-muted">
               Spacing
               <input className={field} type="number" min={0} max={255} value={seg.spc} onChange={(e) => patch({ spc: Math.max(0, Number(e.target.value)) })} />
+            </label>
+            <label className="text-xs text-muted" title="Rotates the effect along the segment by this many LEDs">
+              Offset
+              <input className={field} type="number" min={0} max={Math.max(0, seg.len - 1)} value={seg.of} onChange={(e) => patch({ of: Math.max(0, Math.min(seg.len - 1, Number(e.target.value) || 0)) })} />
             </label>
           </div>
           {(range.start !== seg.start || range.stop !== seg.stop) && (
@@ -118,6 +141,9 @@ function SegmentCard({ seg, ledCount, canDelete, onFocus }: { seg: Segment; ledC
             </label>
             <label className="flex items-center gap-2">
               <Toggle label="Mirror" checked={seg.mi} onChange={(mi) => patch({ mi })} /> Mirror
+            </label>
+            <label className="flex items-center gap-2" title="Pause the segment on its current frame">
+              <Toggle label="Freeze" checked={seg.frz} onChange={(frz) => patch({ frz })} /> Freeze
             </label>
             {canDelete && (
               <Button variant="danger" className="ml-auto" onClick={() => patch({ stop: 0 })}>

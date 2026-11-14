@@ -60,3 +60,24 @@ describe('applyPatch (optimistic state)', () => {
     expect(s.bri).toBe(128)
   })
 })
+
+describe('patches for newer features', () => {
+  it('never merges pixel writes, playlists, or a pixel write into a slider change', () => {
+    expect(mergePatches({ seg: { id: 0, i: [0, 'FF0000'] } }, { seg: { id: 0, i: [1, '00FF00'] } })).toBeNull()
+    expect(mergePatches({ seg: { id: 0, sx: 1 } }, { seg: { id: 0, i: ['FF0000'] } })).toBeNull()
+    expect(mergePatches({ playlist: {} }, { bri: 5 })).toBeNull()
+  })
+  it('merges sync switches', () => {
+    expect(mergePatches({ udpn: { send: true } }, { udpn: { recv: false } })).toEqual({ udpn: { send: true, recv: false } })
+  })
+  it('pixel writes freeze the segment and are not copied into the state', () => {
+    const s = applyPatch(state(), { seg: { id: 0, i: ['FF0000'] } })
+    expect(s.seg[0].frz).toBe(true)
+    expect(s.seg[0]).not.toHaveProperty('i')
+  })
+  it('stopping a playlist clears pl; sync switches update udpn', () => {
+    const s = applyPatch({ ...state(), pl: 4 }, { playlist: {}, udpn: { send: true } })
+    expect(s.pl).toBe(-1)
+    expect(s.udpn).toEqual({ send: true, recv: true })
+  })
+})

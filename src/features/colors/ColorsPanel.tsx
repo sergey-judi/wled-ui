@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import { Shuffle } from 'lucide-react'
 import { RgbColorPicker } from 'react-colorful'
 import { useDevice } from '../../store/device'
 import { send, useCurrentEffect, useFocusSegment, useLightCaps } from '../../store/hooks'
-import { Card, Chip, Slider, Empty } from '../../components/ui'
-import { cctToKelvin, hexToRgb, kelvinToRgb, rgbCss, rgbToHex } from '../../lib/color'
+import { Button, Card, Chip, Slider, Empty } from '../../components/ui'
+import { cctToKelvin, hexToRgb, kelvinToRgb, randomVividColor, rgbCss, rgbToHex } from '../../lib/color'
 import type { ColorValue, RGBW } from '../../api/types'
 
 const KELVIN_SWATCHES = [2200, 2700, 3500, 4500, 5500, 6500]
@@ -91,7 +92,14 @@ export function ColorsPanel() {
 
       <div className="grid min-w-0 grid-cols-1 content-start gap-4">
         {caps.rgb && (
-          <Card title="Swatches">
+          <Card
+            title="Swatches"
+            action={
+              <Button variant="ghost" onClick={() => setRgb(randomVividColor())}>
+                <Shuffle className="size-4" /> Random
+              </Button>
+            }
+          >
             <div className="grid grid-cols-6 gap-3">
               {SWATCHES.map((c) => (
                 <button

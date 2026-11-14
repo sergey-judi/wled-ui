@@ -158,14 +158,39 @@ export interface PalettePage {
   p: Record<string, PaletteStop[]>
 }
 
+/**
+ * Playlist definition (wled00/playlist.cpp). Durations and transitions are in 100 ms units;
+ * a single number applies to every entry. repeat 0 = forever. end = preset applied afterwards
+ * (0 = stay on the last entry). r = shuffle after each round.
+ */
+export interface Playlist {
+  ps: number[]
+  dur: number[] | number
+  transition: number[] | number
+  repeat?: number
+  end?: number
+  r?: boolean
+}
+
 /** An entry of /presets.json (a stored partial state, or a playlist). */
 export interface Preset {
   n?: string
-  /** Quick-load label (1–2 characters / emoji). */
+  /** Quick-load label (up to 3 characters / emoji on SR). */
   ql?: string
-  playlist?: { ps: number[]; dur: number[] | number; transition: number[] | number; repeat?: number; end?: number }
+  playlist?: Playlist
   win?: string
   [key: string]: unknown
+}
+
+/** GET /json/nodes: other WLED devices heard on the sync port (needs "List WLED devices" enabled). */
+export interface WledNode {
+  name: string
+  /** 32 = ESP32, 82 = ESP8266. */
+  type: number
+  ip: string
+  /** Number of missed announcements. */
+  age: number
+  vid: number
 }
 
 export type PresetsFile = Record<string, Preset>
@@ -198,6 +223,11 @@ export interface SegmentPatch {
   sel?: boolean
   rev?: boolean
   mi?: boolean
+  /**
+   * Individual LEDs (segment-relative indices). Freezes the segment. Integers set the start (or
+   * start + stop) index, colours are "RRGGBB" strings or [r,g,b(,w)]. See src/api/pixels.ts.
+   */
+  i?: (number | string | number[])[]
 }
 
 export interface StatePatch {
@@ -217,6 +247,13 @@ export interface StatePatch {
   /** With psave: include brightness / segment bounds. */
   ib?: boolean
   sb?: boolean
+  /** With psave: quick-load label. */
+  ql?: string
+  /** With psave: store this request as-is instead of capturing the current state. */
+  o?: boolean
+  /** Start a playlist; {} stops the running one. */
+  playlist?: Playlist | Record<string, never>
+  udpn?: { send?: boolean; recv?: boolean }
   inputLevel?: number
   v?: boolean
   time?: number

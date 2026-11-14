@@ -9,7 +9,7 @@ import { hexToRgb, kelvinToRgb } from '../lib/color'
  */
 
 /** Keys that trigger an action and must never be merged with neighbours. */
-const ACTION_KEYS: (keyof StatePatch)[] = ['ps', 'psave', 'pdel', 'n']
+const ACTION_KEYS: (keyof StatePatch)[] = ['ps', 'psave', 'pdel', 'n', 'playlist']
 
 function isAction(p: StatePatch) {
   return ACTION_KEYS.some((k) => p[k] !== undefined) || p.on === 't'
@@ -28,7 +28,8 @@ function mergeColors(a: ColorValue[] | undefined, b: ColorValue[] | undefined): 
 }
 
 function mergeSegment(a: SegmentPatch, b: SegmentPatch): SegmentPatch | null {
-  if (a.id !== b.id) return null
+  // Pixel writes are incremental: merging would drop the earlier batch.
+  if (a.id !== b.id || a.i || b.i) return null
   const col = mergeColors(a.col, b.col)
   return { ...a, ...b, ...(col ? { col } : {}) }
 }
@@ -47,6 +48,7 @@ export function mergePatches(a: StatePatch, b: StatePatch): StatePatch | null {
   const out: StatePatch = { ...a, ...b }
   if (seg) out.seg = seg
   if (a.nl || b.nl) out.nl = { ...a.nl, ...b.nl }
+  if (a.udpn || b.udpn) out.udpn = { ...a.udpn, ...b.udpn }
   return out
 }
 
@@ -60,7 +62,7 @@ function toRgbw(v: ColorValue, prev: RGBW): RGBW | null {
 function applySegment(seg: Segment, p: SegmentPatch): Segment {
   const next: Segment = { ...seg, col: [...seg.col] as Segment['col'] }
   for (const [k, v] of Object.entries(p)) {
-    if (k === 'col' || k === 'id' || v === undefined) continue
+    if (k === 'col' || k === 'id' || k === 'i' || v === undefined) continue
     ;(next as unknown as Record<string, unknown>)[k] = v
   }
   p.col?.forEach((c, i) => {
@@ -73,6 +75,8 @@ function applySegment(seg: Segment, p: SegmentPatch): Segment {
     next.on = p.bri > 0
     if (p.bri === 0) next.bri = seg.bri
   }
+  // Writing individual LEDs freezes the segment on the lamp.
+  if (p.i && p.frz === undefined) next.frz = true
   next.len = next.stop - next.start
   return next
 }
@@ -94,6 +98,8 @@ export function applyPatch(state: WledState, patch: StatePatch): WledState {
   if (patch.inputLevel !== undefined) s.inputLevel = patch.inputLevel
   if (patch.nl) s.nl = { ...s.nl, ...patch.nl }
   if (patch.ps !== undefined) s.ps = patch.ps
+  if (patch.udpn) s.udpn = { ...s.udpn, ...patch.udpn }
+  if (patch.playlist && !('ps' in patch.playlist)) s.pl = -1
 
   if (patch.seg) {
     const list = Array.isArray(patch.seg) ? patch.seg : [patch.seg]
